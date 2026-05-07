@@ -193,9 +193,9 @@ public class CMapAwareDocumentFont extends DocumentFont {
      */
     @Override
     public int getWidth(int char1) {
-        if (char1 == ' ') {
-            return spaceWidth;
-        }
+//        if (char1 == ' ') {
+//            return spaceWidth;
+//        }
 
         Integer cid = unicodeToCid.get(char1);
 
