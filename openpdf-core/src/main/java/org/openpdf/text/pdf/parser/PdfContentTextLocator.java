@@ -43,8 +43,11 @@ package org.openpdf.text.pdf.parser;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.openpdf.text.pdf.BaseFont;
@@ -132,174 +135,60 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
         registerContentOperator(this.new Do());
     }
 
+    void pushContext(String newContextName) {
+        contextNames.push(newContextName);
+    }
+
     /**
      * Assemble partial words on the same line and execute the location strategy.
      *
      */
     void popContext() {
         contextNames.pop();
-        List<TextAssemblyBuffer> newBuffer = textFragmentStreams.pop();
-        if(textFragmentStreams.isEmpty()) {
-            textFragments = new ArrayList<>();
-        } else {
-            textFragments = textFragmentStreams.peek();
-        }
-        renderListener.reset();
-        StringBuilder builder = new StringBuilder();
-        List<Float> widths = new ArrayList<>(100);
-        if (newBuffer.isEmpty()) {
-            return;
-        }
-        float currentY = -1000;
-        float fontFloor = 0;
-        float fontCeiling = 0;
-        for (TextAssemblyBuffer tbuff : newBuffer) {
-            if (!(tbuff instanceof ParsedText)) {
-                continue;
-            }
-            ParsedText pText = (ParsedText) tbuff;
-            final float pY = pText.getStartPoint().get(1);
-            if (pY != currentY) {
-                //assemble current text
-
-                String inspected = builder.toString();
-
-                final float endWidth = widths.getLast();
-                switch (this.mode) {
-                    case MatchingStrategy.PATTERN: {
-                        matchPdfString(inspected, widths, endWidth, fontFloor, fontCeiling);
-                        break;
-                    }
-                    case MatchingStrategy.BBOX: {
-                        locatePdfString(inspected, widths.getFirst(), endWidth, fontFloor, fontCeiling);
-                        break;
-                    }
-                    default: {
-                        //do nothing for now
-                    }
-                }
-
-                //reset state
-                widths.clear();
-
-                widths.add(pText.getStartPoint().get(0));
-                fontFloor = pY;
-                fontCeiling = pY;
-                builder = new StringBuilder();
-            }
-
-            String decoded;
-            byte[] bytes;
-            if (BaseFont.IDENTITY_H.equals(graphicsState().getFont().getEncoding())) {
-                bytes = pText.getFontCodes().getBytes(StandardCharsets.UTF_16);
-            } else {
-                bytes = pText.getFontCodes().getBytes();
-            }
-            decoded = graphicsState().getFont().decode(bytes, 0, bytes.length);
-            builder.append(decoded);
-            char[] chars = decoded.toCharArray();
-            float startWidth = pText.getStartPoint().get(0);
-            float totalWidth = 0;
-            for (char c : chars) {
-                float w = graphicsState().getFont().getWidth(c) / 1000.0f;
-                float wordSpacing = Character.isSpaceChar(c) ? graphicsState().getWordSpacing() : 0f;
-                float blockWidth =
-                        (w * graphicsState().getFontSize() + graphicsState().getCharacterSpacing() + wordSpacing)
-                                * graphicsState().getHorizontalScaling();
-                totalWidth += blockWidth;
-                widths.add(startWidth + totalWidth);
-            }
-
-            float currentFontFloor = pY + graphicsState().getFontDescentDescriptor();
-            float currentFontCeiling = pY + graphicsState().getFontAscentDescriptor();
-            if (currentFontFloor < fontFloor) {
-                fontFloor = currentFontFloor;
-            }
-            if (currentFontCeiling > fontCeiling) {
-                fontCeiling = currentFontCeiling;
-            }
-        }
-
-        if (widths.size() > 1) {
-            //assemble current text
-
-            String inspected = builder.toString();
-
-            final float endWidth = widths.getLast();
-            switch (this.mode) {
-                case MatchingStrategy.PATTERN: {
-                    matchPdfString(inspected, widths, endWidth, fontFloor, fontCeiling);
-                    break;
-                }
-                case MatchingStrategy.BBOX: {
-                    locatePdfString(inspected, widths.getFirst(), endWidth, fontFloor, fontCeiling);
-                    break;
-                }
-                default: {
-                    //do nothing for now
-                }
-            }
-        }
-    }
-
-    void pushContext(String newContextName) {
-        contextNames.push(newContextName);
-        textFragmentStreams.push(textFragments);
-        textFragments = new ArrayList<>();
-    }
-
-    public void reset() {
-        if (gsStack == null || gsStack.isEmpty()) {
-            gsStack = new Stack<>();
-        }
-        gsStack.add(new GraphicsState());
-        textMatrix = null;
-        textLineMatrix = null;
-    }
-
-    void displayPdfString(PdfString string) {
-        ParsedText renderInfo = ParsedText.create(string, graphicsState(), textMatrix);
-        if (contextNames.peek() != null) {
-            textFragments.add(renderInfo);
-        }
-        textMatrix = new Matrix(renderInfo.getWidth(), 0)
-                .multiply(textMatrix);
     }
 
     /**
      * Search for a pattern in a PdfString and if found, collect its bounding box
      *
      * @param decoded     the text to inspect
-     * @param widths      array of prefix widths of each char
-     * @param totalWidth  width of the text
+     * @param widths      cumulative list of end-widths of each character
      * @param fontFloor   lowest y-coordinate of the font
      * @param fontCeiling highest y-coordinate of the font
      */
-    private void matchPdfString(String decoded, List<Float> widths, float totalWidth, float fontFloor,
+    private void matchPdfString(String decoded, List<Float> widths, float fontFloor,
             float fontCeiling) {
+        if (widths.size() <= 1) {
+            return;
+        }
         Matcher m = p.matcher(decoded);
         while (m.find()) {
-            float x1 = widths.get(m.start());
-            float x2 = widths.get(m.end());
-            MatchedPattern mp = new MatchedPattern(decoded, this.page, x1, fontFloor, x2, fontCeiling);
+            int beginning = m.start();
+            int end = m.end();
+            float x1 = widths.get(beginning);
+            float x2 = widths.get(end);
+            MatchedPattern mp = new MatchedPattern(decoded, this.page, widths.getFirst(), fontFloor, widths.getLast(),
+                    fontCeiling,
+                    beginning, end
+                    , x1, x2);
             accumulator.add(mp);
         }
-        textMatrix = new Matrix(totalWidth, 0).multiply(textMatrix);
     }
 
     /**
      * Extract text if it's coordinates intersect with the given bounding box
      *
      * @param decoded     the text to inspect
-     * @param startWidth  left-most x-coordinate of the text
-     * @param totalWidth  width of the text
+     * @param widths      cumulative list of end-widths of each character
      * @param fontFloor   lowest y-coordinate of the font
      * @param fontCeiling highest y-coordinate of the font
      */
-    private void locatePdfString(String decoded, float startWidth, float totalWidth, float fontFloor,
+    private void locatePdfString(String decoded, List<Float> widths, float fontFloor,
             float fontCeiling) {
-        float endWidth = startWidth + totalWidth;
-        textMatrix = new Matrix(totalWidth, 0).multiply(textMatrix);
+        if (widths.size() <= 1) {
+            return;
+        }
+        float startWidth = widths.getFirst();
+        float endWidth = widths.getLast();
         if (startWidth < this.coordinates[0] && endWidth < this.coordinates[0]) {
             return;
         }
@@ -312,13 +201,29 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
         if (fontFloor > this.coordinates[3]) {
             return;
         }
-        MatchedPattern mp = new MatchedPattern(decoded, this.page, startWidth, fontFloor, endWidth, fontCeiling);
-        accumulator.add(mp);
-    }
 
-    private float convertHeightToUser(float height) {
-        Vector endPos = new Vector(0, height, 1f).cross(textMatrix);
-        return endPos.get(1);
+        int nearestLeft = Collections.binarySearch(widths, this.coordinates[0]);
+        if (nearestLeft < 0) {
+            nearestLeft = -(nearestLeft + 1);
+            if (nearestLeft > 0) {
+                nearestLeft--;
+            }
+        }
+
+        int nearestRight = Collections.binarySearch(widths, this.coordinates[2]);
+        if (nearestRight < 0) {
+            nearestRight = -(nearestRight + 1);
+            if (nearestRight != 0) {
+                nearestRight--;
+            }
+        }
+
+        MatchedPattern mp = new MatchedPattern(decoded, this.page, widths.getFirst(),
+                fontFloor,
+                widths.getLast(),
+                fontCeiling,
+                nearestLeft, nearestRight, widths.get(nearestLeft), widths.get(nearestRight));
+        accumulator.add(mp);
     }
 
     @Override
@@ -330,6 +235,115 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
      * @return list of text strips that matches
      */
     public List<MatchedPattern> getMatchedPatterns() {
+        StringBuilder builder = new StringBuilder();
+        List<Float> widths = new ArrayList<>();
+        float currentY = -1000;
+        float totalWidth = 0;
+        float fontFloor = 0;
+        float fontCeiling = 0;
+        ParsedText inProgress = null;
+        for (TextAssemblyBuffer tbuff : textFragments) {
+            if (!(tbuff instanceof ParsedText)) {
+                continue;
+            }
+            ParsedText pText = (ParsedText) tbuff;
+            final float pY = pText.getStartPoint().get(1);
+            if (pY != currentY) {
+                //assemble current text
+                String inspected = builder.toString();
+                if (widths.size() > 1) {
+                    final float endWidth = widths.getLast();
+                    switch (this.mode) {
+                        case MatchingStrategy.PATTERN: {
+                            matchPdfString(inspected, widths, fontFloor, fontCeiling);
+                            break;
+                        }
+                        case MatchingStrategy.BBOX: {
+                            locatePdfString(inspected, widths, fontFloor, fontCeiling);
+                            break;
+                        }
+                        default: {
+                            //do nothing for now
+                        }
+                    }
+                }
+
+                //reset state
+                widths.clear();
+                totalWidth = pText.getStartPoint().get(0);
+                widths.add(totalWidth);
+                fontFloor = pY;
+                fontCeiling = pY;
+                builder = new StringBuilder();
+                inProgress = null;
+            }
+
+            if (inProgress != null) {
+                float dist = inProgress.getEndPoint().subtract(pText.getStartPoint()).get(0);
+                // If distance from two textfragments is greater than a single space (thus not part of the same word)
+                // we insert a single space char with the width of corresponding distance. Because the two fragments
+                // could be of two different font sizes, it would be impractical to find the exact number of spaces.
+                // This is of course an edge case that hardly happens in real examples, and usually a matched pattern
+                // would not consider the differences between one or more spaces.
+                float smallestSpace = Float.min(pText.getSingleSpaceWidth(), inProgress.getSingleSpaceWidth());
+                //smallestSpace = smallestSpace / 2.3f;
+                if (dist >= smallestSpace) {
+                    totalWidth += dist;
+                    widths.add(totalWidth);
+                    builder.append(" ");
+                }
+            }
+
+            GraphicsState currentGraphicState = pText.getGraphicState();
+
+            String decoded = pText.getText();
+
+            builder.append(decoded);
+            char[] chars = decoded.toCharArray();
+
+            for (char c : chars) {
+                float w = currentGraphicState.getFont().getWidth(c) / 1000.0f;
+                float wordSpacing = Character.isSpaceChar(c) ? currentGraphicState.getWordSpacing() : 0f;
+                float blockWidth =
+                        (w * currentGraphicState.getFontSize() + currentGraphicState.getCharacterSpacing()
+                                + wordSpacing)
+                                * currentGraphicState.getHorizontalScaling();
+                totalWidth += blockWidth;
+                widths.add(totalWidth);
+            }
+
+            float currentFontFloor = pY + currentGraphicState.getFontDescentDescriptor();
+            float currentFontCeiling = pY + currentGraphicState.getFontAscentDescriptor();
+            if (currentFontFloor < fontFloor) {
+                fontFloor = currentFontFloor;
+            }
+            if (currentFontCeiling > fontCeiling) {
+                fontCeiling = currentFontCeiling;
+            }
+
+            inProgress = pText;
+            currentY = pY;
+        }
+
+        if (widths.size() > 1) {
+            //assemble current text
+
+            String inspected = builder.toString();
+            final float endWidth = widths.getLast();
+            switch (this.mode) {
+                case MatchingStrategy.PATTERN: {
+                    matchPdfString(inspected, widths, fontFloor, fontCeiling);
+                    break;
+                }
+                case MatchingStrategy.BBOX: {
+                    locatePdfString(inspected, widths, fontFloor, fontCeiling);
+                    break;
+                }
+                default: {
+                    //do nothing for now
+                }
+            }
+        }
         return this.accumulator;
     }
 }

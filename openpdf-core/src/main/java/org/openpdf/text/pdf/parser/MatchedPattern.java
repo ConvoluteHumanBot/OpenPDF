@@ -49,6 +49,10 @@ package org.openpdf.text.pdf.parser;
 public class MatchedPattern {
 
     private final String text;
+    private final int startIndex;
+    private final int endIndex;
+    private final float leftX;
+    private final float rightX;
     private final int page;
     private final float[] coordinates = new float[4];
 
@@ -56,15 +60,23 @@ public class MatchedPattern {
      * Constructor to pair a strip of text with its bounding box coordinates inside a page. The coordinates system has
      * the origin (0, 0) in the lower left point of the page and uses PDF points as unit measure.
      *
-     * @param text string
-     * @param page int
-     * @param llx  float lower left x coordinate
-     * @param lly  float lower left y coordinate
-     * @param urx  float upper right x coordinate
-     * @param ury  float upper right y coordinate
+     * @param text       original line containing the match
+     * @param startIndex first index of the match inside the text
+     * @param endIndex   last index of the match inside the text
+     * @param llx        float lower left x coordinate
+     * @param page       int
+     * @param llx        float lower left x coordinate
+     * @param lly        float lower left y coordinate
+     * @param urx        float upper right x coordinate
+     * @param ury        float upper right y coordinate
      */
-    MatchedPattern(String text, int page, float llx, float lly, float urx, float ury) {
+    MatchedPattern(String text, int page, float llx, float lly, float urx, float ury, int startIndex, int endIndex,
+            float leftX, float rightX) {
         this.text = text;
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
+        this.leftX = leftX;
+        this.rightX = rightX;
         this.page = page;
         coordinates[0] = llx;
         coordinates[1] = lly;
@@ -76,6 +88,20 @@ public class MatchedPattern {
         return text;
     }
 
+    public String getMatchedText() {
+        if (this.startIndex < 0 || this.startIndex > this.text.length()) {
+            return "";
+        }
+        if (this.endIndex < 0 || this.endIndex > this.text.length()) {
+            return "";
+        }
+        return text.substring(this.startIndex, this.endIndex);
+    }
+
+    public float[] getMatchedBBox() {
+        return new float[]{this.leftX, this.coordinates[1], this.rightX, this.coordinates[3]};
+    }
+
     public int getPage() {
         return page;
     }
@@ -85,7 +111,8 @@ public class MatchedPattern {
     }
 
     public String printCoordinates() {
-        return "[llx: " + coordinates[0] + ", lly: " + coordinates[1] + ", urx: " + coordinates[2] + ", ury: " + coordinates[3] + "]";
+        return "[llx: " + coordinates[0] + ", lly: " + coordinates[1] + ", urx: " + coordinates[2] + ", ury: "
+                + coordinates[3] + "]";
     }
 
     @Override
@@ -93,7 +120,11 @@ public class MatchedPattern {
         StringBuilder sb = new StringBuilder();
         sb.append("Text: [")
                 .append(this.text)
-                .append("] - boundingBox: ")
+                .append("} - {")
+                .append(this.startIndex)
+                .append("::")
+                .append(this.endIndex)
+                .append("}] - boundingBox: ")
                 .append(this.printCoordinates())
                 .append(" - page: [")
                 .append(this.page)

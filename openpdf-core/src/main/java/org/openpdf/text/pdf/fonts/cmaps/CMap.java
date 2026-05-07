@@ -154,4 +154,9 @@ public class CMap {
         return codeSpaceRanges;
     }
 
+    public Map<Integer, String> getLookup() {
+        if(hasOneByteMappings()) return singleByteMappings;
+        return doubleByteMappings;
+    }
+
 }

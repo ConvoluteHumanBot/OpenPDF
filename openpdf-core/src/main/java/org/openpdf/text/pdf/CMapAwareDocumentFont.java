@@ -51,6 +51,8 @@ import org.openpdf.text.pdf.fonts.cmaps.CMap;
 import org.openpdf.text.pdf.fonts.cmaps.CMapParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Implementation of DocumentFont used while parsing PDF streams.
@@ -77,6 +79,8 @@ public class CMapAwareDocumentFont extends DocumentFont {
      * Only needed if the ToUnicode CMap is not provided.
      */
     private char[] cidbyte2uni;
+
+    private HashMap<Integer, Integer> unicodeToCid = new HashMap<>();
 
     /**
      * Creates an instance of a CMapAwareFont based on an indirect reference to a font.
@@ -116,6 +120,19 @@ public class CMapAwareDocumentFont extends DocumentFont {
                 CMapParser cmapParser = new CMapParser();
                 toUnicodeCmap = cmapParser
                         .parse(new ByteArrayInputStream(touni));
+
+                // --- NEW REVERSE MAPPING LOGIC ---
+                // CMap stores mappings in different ways (char, strings, ranges).
+                // We need to extract them to build our reverse lookup.
+                Map<Integer, String> cidToUni = toUnicodeCmap.getLookup();
+                for (Map.Entry<Integer, String> entry : cidToUni.entrySet()) {
+                    String uniStr = entry.getValue();
+                    if (uniStr.length() == 1) { // We only care about single characters for getWidth
+                        int unicode = (int) uniStr.charAt(0);
+                        int cid = entry.getKey();
+                        unicodeToCid.put(unicode, cid);
+                    }
+                }
             } catch (IOException e) {
                 throw new Error("Unable to process ToUnicode map - "
                         + e.getMessage(), e);
@@ -180,6 +197,12 @@ public class CMapAwareDocumentFont extends DocumentFont {
             return spaceWidth;
         }
 
+        Integer cid = unicodeToCid.get(char1);
+
+        if (cid != null && cid >= 0 && cid < 256) {
+            // widths is the int[256] array populated from /FirstChar
+            return widths[cid];
+        }
         return super.getWidth(char1);
     }
 

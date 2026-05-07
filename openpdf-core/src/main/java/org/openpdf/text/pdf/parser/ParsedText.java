@@ -69,12 +69,15 @@ public class ParsedText extends ParsedTextImpl {
 
     static protected ParsedText create(PdfString text, GraphicsState graphicsState, Matrix textMatrix) {
         // Calculate width using the string representation (font codes), not decoded Unicode
-        float totalWidth = getStringWidth(Optional.ofNullable(text)
-                .map(PdfString::toString)
-                .orElse(""), graphicsState);
+
+        // DO THIS:
+        byte[] rawBytes = text.getBytes();
+        String decodedText = graphicsState.getFont().decode(text.toString());
+
+        float totalWidth = getStringWidth(decodedText, graphicsState);
         return new ParsedText(text, totalWidth, graphicsState, textMatrix);
     }
-    
+
     /**
      * Gets the width of a String in text space units
      *
@@ -103,11 +106,11 @@ public class ParsedText extends ParsedTextImpl {
      * @param textMatrix    transform from text space to graphics (drawing space)
      */
     ParsedText(PdfString text, GraphicsState graphicsState, Matrix textMatrix) {
-        this(text, getStringWidth(text.toString(), graphicsState), new GraphicsState(graphicsState), 
+        this(text, getStringWidth(text.toString(), graphicsState), new GraphicsState(graphicsState),
                 textMatrix.multiply(graphicsState.getCtm()),
                 getUnscaledFontSpaceWidth(graphicsState));
     }
-    
+
     /**
      * This constructor should only be called when the origin for text display is at (0,0) and the graphical state
      * reflects all transformations of the baseline. This is in text space units.
@@ -254,7 +257,10 @@ public class ParsedText extends ParsedTextImpl {
     public List<Word> getAsPartialWords() {
         List<Word> result = new ArrayList<>();
         CMapAwareDocumentFont font = graphicsState.getFont();
-        char[] chars = pdfText.getOriginalChars();
+        byte[] rawBytes = pdfText.getBytes();
+        String decodedText = font.decode(pdfText.toString());
+        char[] chars = decodedText.toCharArray();
+//        char[] chars = pdfText.getOriginalChars();
         boolean[] hasSpace = new boolean[chars.length];
         float totalWidth = 0;
         StringBuffer wordAccum = new StringBuffer(3);
@@ -306,15 +312,9 @@ public class ParsedText extends ParsedTextImpl {
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
             hasSpace[i] = false;
-            String charValue = graphicsState.getFont().decode(c);
-
-            if (charValue != null) {
-                for (char cFinal : charValue.toCharArray()) {
-                    if (Character.isSpaceChar(cFinal)) {
-                        wordsAreComplete = true;
-                        hasSpace[i] = true;
-                    }
-                }
+            if (Character.isSpaceChar(c)) {
+                wordsAreComplete = true;
+                hasSpace[i] = true;
             }
         }
         return wordsAreComplete;
@@ -340,7 +340,7 @@ public class ParsedText extends ParsedTextImpl {
             Vector baseline,
             boolean wordsAreComplete,
             boolean currentBreakBefore) {
-        return new Word(graphicsState.getFont().decode(wordAccum.toString()), getAscent(), getDescent(),
+        return new Word(wordAccum.toString(), getAscent(), getDescent(),
                 pointToUserSpace(wordStartOffset, 0f, textToUserSpaceTransformMatrix),
                 pointToUserSpace(wordEndOffset, 0f, textToUserSpaceTransformMatrix), baseline,
                 getSingleSpaceWidth(), wordsAreComplete, currentBreakBefore);
@@ -429,6 +429,10 @@ public class ParsedText extends ParsedTextImpl {
     @Override
     public boolean breakBefore() {
         return false;
+    }
+
+    protected GraphicsState getGraphicState() {
+        return this.graphicsState;
     }
 
 }
