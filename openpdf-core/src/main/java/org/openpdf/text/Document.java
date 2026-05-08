@@ -51,6 +51,7 @@ package org.openpdf.text;
 
 import org.openpdf.text.error_messages.MessageLocalization;
 import org.openpdf.text.pdf.FopGlyphProcessor;
+import org.openpdf.text.pdf.GlyphLayoutManager;
 import org.openpdf.text.pdf.PdfDate;
 import java.io.IOException;
 import java.io.InputStream;
@@ -129,6 +130,12 @@ public class Document implements DocListener {
      * The DocListener.
      */
     private final List<DocListener> listeners = new ArrayList<>();
+
+    /**
+     * GlyphLayoutManager if set, null otherwise
+     */
+    private GlyphLayoutManager glyphLayoutManager;
+
     /**
      * Is the document open or not?
      */
@@ -206,6 +213,28 @@ public class Document implements DocListener {
      * @since 3.1.15
      */
     TextRenderingOptions textRenderingOptions = new TextRenderingOptions();
+
+    /**
+     * Get the glyphLayoutManager
+     *
+     * @return glyphLayoutManager or null
+     */
+    public GlyphLayoutManager getGlyphLayoutManager() {
+        return glyphLayoutManager;
+    }
+
+    /**
+     * Set the glyphLayoutManager
+     * Fluent API: <code>Document document = new Document().setGlyphLayoutManager(glyphLayoutManager);</code>
+     *
+     * @param glyphLayoutManager
+     * @return
+     */
+    public Document setGlyphLayoutManager(GlyphLayoutManager glyphLayoutManager) {
+        setGlyphSubstitutionEnabled(false); // Use either FopGlyphSubstition or GlyphLayoutManager, not both.
+        this.glyphLayoutManager = glyphLayoutManager;
+        return this;
+    }
 
     /**
      * Constructs a new <CODE>Document</CODE> -object with the default page size as <CODE>PageSize.A4</CODE> .

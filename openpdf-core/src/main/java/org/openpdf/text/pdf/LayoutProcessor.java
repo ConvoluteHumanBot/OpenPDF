@@ -62,7 +62,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Provides glyph layout e.g. for accented Latin letters.
+ *
+ * @deprecated Use GlyphLayoutManager
  */
+@Deprecated
 public class LayoutProcessor {
 
     public enum Version {

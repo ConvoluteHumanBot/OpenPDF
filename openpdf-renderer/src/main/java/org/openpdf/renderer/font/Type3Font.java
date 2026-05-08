@@ -82,9 +82,6 @@ public class Type3Font extends PDFFont {
         }
         this.at = new AffineTransform(matrixAry);
 
-        // get the scale from the matrix
-        float scale = matrixAry[0] + matrixAry[2];
-
         // put all the resources in a Hash
         PDFObject rsrcObj = fontObj.getDictRef("Resources");
         if (rsrcObj != null) {
@@ -141,7 +138,7 @@ public class Type3Font extends PDFFont {
      * @return a glyph for this character
      */
     @Override
-	protected PDFGlyph getGlyph(char src, String name) {
+    protected PDFGlyph getGlyph(char src, String name) {
         if (name == null) {
             throw new IllegalArgumentException("Glyph name required for Type3 font!" +
                     "Source character: " + (int) src);

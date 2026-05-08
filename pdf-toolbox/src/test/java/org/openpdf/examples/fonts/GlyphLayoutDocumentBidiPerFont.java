@@ -25,12 +25,18 @@ import org.openpdf.text.pdf.PdfWriter;
 /**
  * Prints bidirectional text with correct glyph layout, kerning and ligatures globally enabled Direction can be chosen
  * per font
+ *
+ * @deprecated use GlyphLayountManager
  */
+@Deprecated
 public class GlyphLayoutDocumentBidiPerFont {
 
     public static String INTRO_TEXT =
-            "Test of bidirectional text\n" +
-                    "Using LayoutProcessor for glyph layout with Java built-in routines.\n\n";
+            """
+                    Test of bidirectional text
+                    Using LayoutProcessor for glyph layout with Java built-in routines.
+                    
+                    """;
 
     /**
      * Main method

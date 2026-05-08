@@ -143,7 +143,7 @@ class TrueTypeFont extends BaseFont {
      * <CODE>int[2]</CODE> where position 0 is the offset from the start of the file and position 1 is the length of
      * the table.
      */
-    protected HashMap<String, int[]> tables;
+    protected Map<String, int[]> tables;
     /**
      * The file in use.
      */
@@ -1501,9 +1501,6 @@ class TrueTypeFont extends BaseFont {
         if (cmap10 != null) {
             return cmap10.get(c);
         }
-        if (cmap05 != null) {
-            return cmap05.get(c);
-        }
         return null;
     }
 
@@ -1837,5 +1834,14 @@ class TrueTypeFont extends BaseFont {
          * A variable.
          */
         int sCapHeight;
+    }
+
+    @Override
+    public Map<String, int[]> getTables() {
+        return tables;
+    }
+
+    public void setTables(Map<String, int[]> tables) {
+        this.tables = tables;
     }
 }

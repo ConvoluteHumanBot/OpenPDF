@@ -31,53 +31,39 @@ import java.io.StringReader;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openpdf.css.sheet.StylesheetInfo.Origin.USER_AGENT;
 
-public class ParserTest {
+class ParserTest {
     private final String test = String.format("div { background-image: url('something') }%n");
     private final CSSErrorHandler errorHandler = (uri, message) -> System.out.println(message);
 
     @Test
-    public void cssParsingPerformance() throws IOException {
+    void cssParsingPerformance() throws IOException {
         int count = 10_000;
         String longTest = test.repeat(count);
         assertThat(longTest.length()).as("Long enough input").isEqualTo(test.length() * count);
 
-        long total = 0;
         for (int i = 0; i < 40; i++) {
-            long start = System.currentTimeMillis();
             CSSParser p = new CSSParser(errorHandler);
             Stylesheet stylesheet = p.parseStylesheet(null, USER_AGENT, new StringReader(longTest));
-            long end = System.currentTimeMillis();
-            total += (end-start);
 
             assertThat(stylesheet.getContents()).hasSize(count);
         }
 
-        total = 0;
         for (int i = 0; i < 10; i++) {
-            long start = System.currentTimeMillis();
             CSSParser p = new CSSParser(errorHandler);
             Stylesheet stylesheet = p.parseStylesheet(null, USER_AGENT, new StringReader(longTest));
-            long end = System.currentTimeMillis();
-            // System.out.println("Took " + (end-start) + " ms");
-            total += (end-start);
             assertThat(stylesheet.getContents()).hasSize(count);
         }
 
 
         CSSParser p = new CSSParser(errorHandler);
 
-        total = 0;
         for (int i = 0; i < 10; i++) {
-            long start = System.currentTimeMillis();
             for (int j = 0; j < 10000; j++) {
                 Stylesheet stylesheet = p.parseStylesheet(null, USER_AGENT, new StringReader(test));
                 assertThat(stylesheet.getURI()).isNull();
                 assertThat(stylesheet.getOrigin()).isEqualTo(USER_AGENT);
                 assertThat(stylesheet.getContents()).hasSize(1);
             }
-            long end = System.currentTimeMillis();
-            // System.out.println("Took " + (end-start) + " ms");
-            total += (end-start);
         }
     }
 

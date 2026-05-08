@@ -55,7 +55,6 @@ import org.openpdf.text.Rectangle;
 import org.openpdf.text.utils.PdfBatch;
 import org.openpdf.text.utils.PdfBatch.BatchResult;
 
-import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -223,18 +222,28 @@ public final class PdfBatchUtils {
     /** Quick permissions helper. */
     public static int perms(boolean print, boolean modify, boolean copy, boolean annotate) {
         int p = 0;
-        if (print) p |= PdfWriter.ALLOW_PRINTING;
-        if (modify) p |= PdfWriter.ALLOW_MODIFY_CONTENTS;
-        if (copy) p |= PdfWriter.ALLOW_COPY;
-        if (annotate) p |= PdfWriter.ALLOW_MODIFY_ANNOTATIONS;
+        if (print) {
+            p |= PdfWriter.ALLOW_PRINTING;
+        }
+        if (modify) {
+            p |= PdfWriter.ALLOW_MODIFY_CONTENTS;
+        }
+        if (copy) {
+            p |= PdfWriter.ALLOW_COPY;
+        }
+        if (annotate) {
+            p |= PdfWriter.ALLOW_MODIFY_ANNOTATIONS;
+        }
         return p;
     }
 
     /** AES 128 vs 256 convenience. */
-    public static int aes128() { return PdfWriter.ENCRYPTION_AES_128; }
-    public static int aes256() { return PdfWriter.ENCRYPTION_AES_256_V3; }
+    public static int aes128() {
+        return PdfWriter.ENCRYPTION_AES_128;
+    }
 
-    /** Small utility for closing Closeables, ignoring exceptions. */
-    private static void closeQuietly(Closeable c) { try { if (c != null) c.close(); } catch (Exception ignored) {} }
+    public static int aes256() {
+        return PdfWriter.ENCRYPTION_AES_256_V3;
+    }
 
 }

@@ -93,7 +93,7 @@ public class PatternType1 extends PDFPattern {
      * Note the resources passed in are ignored...
      */
     @Override
-	protected void parse(PDFObject patternObj, Map rsrc) throws IOException
+    protected void parse(PDFObject patternObj, Map rsrc) throws IOException
     {
         this.data = patternObj.getStream();
         
@@ -102,7 +102,7 @@ public class PatternType1 extends PDFPattern {
         this.tilingType = patternObj.getDictRef("TilingType").getIntValue();
         
         PDFObject bboxObj = patternObj.getDictRef("BBox");
-	this.bbox= new Rectangle2D.Float(bboxObj.getAt(0).getFloatValue(),
+    this.bbox= new Rectangle2D.Float(bboxObj.getAt(0).getFloatValue(),
                                     bboxObj.getAt(1).getFloatValue(),
                                     bboxObj.getAt(2).getFloatValue(),
                                     bboxObj.getAt(3).getFloatValue());
@@ -120,7 +120,7 @@ public class PatternType1 extends PDFPattern {
      * @param basePaint the base paint to use, or null if not needed
      */
     @Override
-	public PDFPaint getPaint(PDFPaint basePaint) {
+    public PDFPaint getPaint(PDFPaint basePaint) {
         // create the outline of the pattern in user space by creating
         // a box with width xstep and height ystep.  Transform that
         // box using the pattern's matrix to get the user space
@@ -151,14 +151,11 @@ public class PatternType1 extends PDFPattern {
         // now parse the pattern contents
         PDFParser prc = new PDFParser(page, this.data, getResources());
         prc.go(true);
-        
-        int width = (int) getBBox().getWidth();
-        int height = (int) getBBox().getHeight();
-        
+
         // get actual image
         Paint paint = new Paint() {
             @Override
-			public PaintContext createContext(ColorModel cm, 
+            public PaintContext createContext(ColorModel cm, 
                                               Rectangle deviceBounds, 
                                               Rectangle2D userBounds,
                                               AffineTransform xform,
@@ -191,7 +188,7 @@ public class PatternType1 extends PDFPattern {
             }
             
             @Override
-			public int getTransparency() {
+            public int getTransparency() {
                 return Transparency.TRANSLUCENT;
             }
         };
@@ -253,7 +250,7 @@ public class PatternType1 extends PDFPattern {
          * will be added.
          */
         @Override
-		public Rectangle2D fill(PDFRenderer state, Graphics2D g,
+        public Rectangle2D fill(PDFRenderer state, Graphics2D g,
                                 GeneralPath s) {                        
             // first transform s into device space
             AffineTransform at = g.getTransform();
@@ -322,19 +319,19 @@ public class PatternType1 extends PDFPattern {
         }
         
         @Override
-		public void dispose() {
+        public void dispose() {
             this.colorModel = null;
             this.bbox = null;
             this.data = null;
         }
         
         @Override
-		public ColorModel getColorModel() {
+        public ColorModel getColorModel() {
             return this.colorModel;
         }
         
         @Override
-		public Raster getRaster(int x, int y, int w, int h) {
+        public Raster getRaster(int x, int y, int w, int h) {
             ColorSpace cs = getColorModel().getColorSpace();
        
             int numComponents = cs.getNumComponents();
@@ -342,9 +339,9 @@ public class PatternType1 extends PDFPattern {
             // all the data, plus alpha channel
             int[] imgData = new int[w * h * (numComponents + 1)];
   
-	    // the x and y step, as ints	
+        // the x and y step, as ints    
             int useXStep = (int) Math.abs(Math.ceil(this.xstep));
-	    int useYStep = (int) Math.abs(Math.ceil(this.ystep));
+        int useYStep = (int) Math.abs(Math.ceil(this.ystep));
          
             // a completely transparent pixel (alpha of 0)
             int[] emptyPixel = new int[numComponents + 1];
@@ -359,18 +356,18 @@ public class PatternType1 extends PDFPattern {
                     
                      //if useXStep is 0, we would divide through 0 so instead xloc is set to 0
                     if(useXStep == 0) {
-                    	xloc = 0;
+                        xloc = 0;
                     }
                     else {
-                    	xloc %= useXStep;
+                        xloc %= useXStep;
                     }
                     
                     //if useYStep is 0, we would divide through 0 so instead yloc is set to 0
                     if(useYStep == 0) {
-                    	yloc = 0;
+                        yloc = 0;
                     }
                     else {
-                    	yloc %= useYStep;
+                        yloc %= useYStep;
                     }
                     
                     if (xloc < 0) {

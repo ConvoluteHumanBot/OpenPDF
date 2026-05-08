@@ -132,10 +132,16 @@ public class PdfPKCS7 {
     private static final String ID_RSA = "1.2.840.113549.1.1.1";
     private static final String ID_DSA = "1.2.840.10040.4.1";
     private static final String ID_ECDSA = "1.2.840.10045.2.1";
+    // ML-DSA (NIST FIPS 204) signature algorithm OIDs. See RFC draft-ietf-lamps-dilithium-certificates.
+    private static final String ID_ML_DSA_44 = "2.16.840.1.101.3.4.3.17";
+    private static final String ID_ML_DSA_65 = "2.16.840.1.101.3.4.3.18";
+    private static final String ID_ML_DSA_87 = "2.16.840.1.101.3.4.3.19";
     private static final String ID_CONTENT_TYPE = "1.2.840.113549.1.9.3";
     private static final String ID_MESSAGE_DIGEST = "1.2.840.113549.1.9.4";
     private static final String ID_SIGNING_TIME = "1.2.840.113549.1.9.5";
     private static final String ID_ADBE_REVOCATION = "1.2.840.113583.1.1.8";
+    private static final String DIGEST_SHA3_256 = "SHA3-256";
+    private static final String DIGEST_SHA3_512 = "SHA3-512";
     private static final Map<String, String> digestNames = new HashMap<>();
     private static final Map<String, String> algorithmNames = new HashMap<>();
     private static final Map<String, String> allowedDigests = new HashMap<>();
@@ -158,14 +164,20 @@ public class PdfPKCS7 {
         digestNames.put("1.2.840.113549.1.1.11", "SHA256");
         digestNames.put("1.2.840.113549.1.1.12", "SHA384");
         digestNames.put("1.2.840.113549.1.1.13", "SHA512");
-        digestNames.put("1.2.840.10040.4.3", "SHA1");    // TODO: bug - duplicate key - overwrites this with DSA
-        digestNames.put("2.16.840.1.101.3.4.3.1", "SHA224");  // TODO: bug - duplicate key - overwrites this with DSA
+        digestNames.put("1.2.840.10040.4.3", "SHA1");
+        digestNames.put("2.16.840.1.101.3.4.3.1", "SHA224");
         digestNames.put("2.16.840.1.101.3.4.3.2", "SHA256");
         digestNames.put("2.16.840.1.101.3.4.3.3", "SHA384");
         digestNames.put("2.16.840.1.101.3.4.3.4", "SHA512");
         digestNames.put("1.3.36.3.3.1.3", "RIPEMD128");
         digestNames.put("1.3.36.3.3.1.2", "RIPEMD160");
         digestNames.put("1.3.36.3.3.1.4", "RIPEMD256");
+        // SHA-3 family (FIPS 202)
+        digestNames.put("2.16.840.1.101.3.4.2.8", DIGEST_SHA3_256);
+        digestNames.put("2.16.840.1.101.3.4.2.10", DIGEST_SHA3_512);
+        // RSASSA-PKCS1-v1_5 with SHA-3
+        digestNames.put("2.16.840.1.101.3.4.3.14", DIGEST_SHA3_256);
+        digestNames.put("2.16.840.1.101.3.4.3.16", DIGEST_SHA3_512);
 
         algorithmNames.put("1.2.840.113549.1.1.1", "RSA");
         algorithmNames.put("1.2.840.10040.4.1", "DSA");
@@ -189,6 +201,13 @@ public class PdfPKCS7 {
         algorithmNames.put("1.2.840.10045.4.3.3", "ECDSA");
         algorithmNames.put("1.2.840.10045.4.3.4", "ECDSA");
         algorithmNames.put("1.2.840.113549.1.1.10", "RSAandMGF1");
+        // RSASSA-PKCS1-v1_5 with SHA-3 family (FIPS 202)
+        algorithmNames.put("2.16.840.1.101.3.4.3.14", "RSA");
+        algorithmNames.put("2.16.840.1.101.3.4.3.16", "RSA");
+        // ML-DSA (NIST FIPS 204) post-quantum signature algorithms
+        algorithmNames.put(ID_ML_DSA_44, "ML-DSA-44");
+        algorithmNames.put(ID_ML_DSA_65, "ML-DSA-65");
+        algorithmNames.put(ID_ML_DSA_87, "ML-DSA-87");
         allowedDigests.put("MD5", "1.2.840.113549.2.5");
         allowedDigests.put("MD2", "1.2.840.113549.2.2");
         allowedDigests.put("SHA1", "1.3.14.3.2.26");
@@ -209,6 +228,9 @@ public class PdfPKCS7 {
         allowedDigests.put("RIPEMD-160", "1.3.36.3.2.1");
         allowedDigests.put("RIPEMD256", "1.3.36.3.2.3");
         allowedDigests.put("RIPEMD-256", "1.3.36.3.2.3");
+        // SHA-3 family (FIPS 202)
+        allowedDigests.put(DIGEST_SHA3_256, "2.16.840.1.101.3.4.2.8");
+        allowedDigests.put(DIGEST_SHA3_512, "2.16.840.1.101.3.4.2.10");
     }
 
     private final List<Certificate> certs;
@@ -267,8 +289,9 @@ public class PdfPKCS7 {
             signCerts = certs;
             signCert = (X509Certificate) certs.iterator().next();
             crls = new ArrayList<>();
-            ASN1InputStream in = new ASN1InputStream(new ByteArrayInputStream(contentsKey));
-            digest = ((DEROctetString) in.readObject()).getOctets();
+            try (ASN1InputStream in = new ASN1InputStream(new ByteArrayInputStream(contentsKey))) {
+                digest = ((DEROctetString) in.readObject()).getOctets();
+            }
             if (provider == null) {
                 sig = Signature.getInstance("SHA1withRSA");
             } else {
@@ -290,15 +313,11 @@ public class PdfPKCS7 {
     public PdfPKCS7(byte[] contentsKey, String provider) {
         try {
             this.provider = provider;
-            ASN1InputStream din = new ASN1InputStream(new ByteArrayInputStream(
-                    contentsKey));
-
-            //
-            // Basic checks to make sure it's a PKCS#7 SignedData Object
-            //
             ASN1Primitive pkcs;
-
-            try {
+            try (ASN1InputStream din = new ASN1InputStream(new ByteArrayInputStream(contentsKey))) {
+                //
+                // Basic checks to make sure it's a PKCS#7 SignedData Object
+                //
                 pkcs = din.readObject();
             } catch (IOException e) {
                 throw new IllegalArgumentException(
@@ -522,6 +541,8 @@ public class PdfPKCS7 {
                 digestEncryptionAlgorithm = ID_DSA;
             } else if (digestEncryptionAlgorithm.equals("EC") || digestEncryptionAlgorithm.equals("ECDSA")) {
                 digestEncryptionAlgorithm = ID_ECDSA;
+            } else if (isMlDsaName(digestEncryptionAlgorithm)) {
+                digestEncryptionAlgorithm = mlDsaOid(digestEncryptionAlgorithm);
             } else {
                 throw new NoSuchAlgorithmException(
                         MessageLocalization.getComposedMessage("unknown.key.algorithm.1",
@@ -581,6 +602,30 @@ public class PdfPKCS7 {
      */
     public static String getDigestOid(String digestName) {
         return digestName != null ? allowedDigests.get(digestName) : null;
+    }
+
+    /**
+     * Tests whether the given JCE key/signature algorithm name refers to an
+     * ML-DSA (NIST FIPS 204) post-quantum signature algorithm. The legacy
+     * Bouncy Castle "Dilithium" names are accepted as aliases.
+     */
+    private static boolean isMlDsaName(String name) {
+        return name != null && (name.startsWith("ML-DSA") || name.startsWith("Dilithium"));
+    }
+
+    /**
+     * Maps a JCE ML-DSA / Dilithium key or signature algorithm name to the
+     * corresponding NIST OID. Defaults to ML-DSA-65 when the parameter set is
+     * not explicitly encoded in the name.
+     */
+    private static String mlDsaOid(String name) {
+        if ("ML-DSA-44".equals(name) || "Dilithium2".equals(name)) {
+            return ID_ML_DSA_44;
+        }
+        if ("ML-DSA-87".equals(name) || "Dilithium5".equals(name)) {
+            return ID_ML_DSA_87;
+        }
+        return ID_ML_DSA_65;
     }
 
     /**
@@ -1154,6 +1199,12 @@ public class PdfPKCS7 {
         if (dea == null) {
             dea = digestEncryptionAlgorithm;
         }
+        // ML-DSA (NIST FIPS 204) is a single-shot signature scheme whose JCE
+        // service name (e.g. "ML-DSA-65") is not combined with a separate
+        // message-digest algorithm.
+        if (dea.startsWith("ML-DSA")) {
+            return dea;
+        }
 
         return getHashAlgorithm() + "with" + dea;
     }
@@ -1248,6 +1299,8 @@ public class PdfPKCS7 {
                 this.digestEncryptionAlgorithm = ID_DSA;
             } else if (digestEncryptionAlgorithm.equals("EC")) {
                 digestEncryptionAlgorithm = ID_ECDSA;
+            } else if (isMlDsaName(digestEncryptionAlgorithm)) {
+                this.digestEncryptionAlgorithm = mlDsaOid(digestEncryptionAlgorithm);
             } else {
                 throw new ExceptionConverter(new NoSuchAlgorithmException(
                         MessageLocalization.getComposedMessage("unknown.key.algorithm.1",

@@ -2,17 +2,18 @@ package org.openpdf.text.pdf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.openpdf.text.Chunk;
-import org.openpdf.text.Document;
-import org.openpdf.text.Font;
-import org.openpdf.text.FontFactory;
-import org.openpdf.text.pdf.parser.PdfTextExtractor;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.openpdf.text.Chunk;
+import org.openpdf.text.Document;
+import org.openpdf.text.Font;
+import org.openpdf.text.FontFactory;
+import org.openpdf.text.pdf.GlyphLayoutFontManager.FontLoadException;
+import org.openpdf.text.pdf.parser.PdfTextExtractor;
 
 class TextExtractTest {
 
@@ -61,6 +62,36 @@ class TextExtractTest {
 
         // Ignore spaces in comparison
         Assertions.assertEquals("ก ข น ํ้ า ต า ญูญูิ่ ก้กิ้".replaceAll(" ", ""),
-            pdfTextExtractor.getTextFromPage(1).replaceAll(" ", ""));
+                pdfTextExtractor.getTextFromPage(1).replaceAll(" ", ""));
+    }
+
+    @Test
+    void textCreateAndExtractTest3() throws FontLoadException, IOException {
+        float fontSize = 12.0f;
+
+        String testText = "กขน้ำตา ญูญูิ่ ก้กิ้";
+
+        URL fontPath = TextExtractTest.class.getResource("/fonts/NotoSansThaiLooped/NotoSansThaiLooped-Regular.ttf");
+
+        assertThat(fontPath).isNotNull();
+
+        GlyphLayoutManager glyphLayoutManager  = new GlyphLayoutManager();
+
+        Font notoSansThaiLooped = glyphLayoutManager.loadFont(fontPath.getPath(), fontSize);
+
+        ByteArrayOutputStream pdfOutput = new ByteArrayOutputStream();
+        try (Document document = new Document().setGlyphLayoutManager(glyphLayoutManager)) {
+            PdfWriter writer = PdfWriter.getInstance(document, pdfOutput);
+            writer.setInitialLeading(16.0f);
+            document.open();
+            document.add(new Chunk(testText, notoSansThaiLooped));
+        }
+
+        PdfReader reader = new PdfReader(new ByteArrayInputStream(pdfOutput.toByteArray()));
+        PdfTextExtractor pdfTextExtractor = new PdfTextExtractor(reader);
+
+        // Ignore spaces in comparison
+        Assertions.assertEquals("ก ข น ํ้ า ต า ญูญูิ่ ก้กิ้".replaceAll(" ", ""),
+                pdfTextExtractor.getTextFromPage(1).replaceAll(" ", ""));
     }
 }

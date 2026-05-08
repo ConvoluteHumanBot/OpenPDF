@@ -9,7 +9,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
@@ -136,9 +136,9 @@ public class LengthValue extends DerivedValue {
                 if (cssName == CSSName.FONT_SIZE) {
                     FontSpecification parentFont = style.getParent().getFont(ctx);
                     //font size and FontSize2D should be identical
-                    absVal = relVal * parentFont.size;//ctx.getFontSize2D(parentFont);
+                    absVal = relVal * parentFont.size; //ctx.getFontSize2D(parentFont);
                 } else {
-                    absVal = relVal * style.getFont(ctx).size;//ctx.getFontSize2D(style.getFont(ctx));
+                    absVal = relVal * style.getFont(ctx).size; //ctx.getFontSize2D(style.getFont(ctx));
                 }
 
                 break;

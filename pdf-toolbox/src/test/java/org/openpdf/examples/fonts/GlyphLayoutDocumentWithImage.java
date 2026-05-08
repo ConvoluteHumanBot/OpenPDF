@@ -23,7 +23,10 @@ import org.openpdf.text.pdf.PdfWriter;
 
 /**
  * Prints characters and sequences of DIN 91379 with correct glyph layout and kerning
+ *
+ * @deprecated use GlyphLayountManager
  */
+@Deprecated
 public class GlyphLayoutDocumentWithImage {
 
 
@@ -78,7 +81,7 @@ public class GlyphLayoutDocumentWithImage {
             document.add(new Chunk("xt\nwith NewLine\n", font));
 
             document.add(new Chunk("Test of several Chunks on one line: A", font));
-            Image image = Image.getInstance("pdf-toolbox/src/test/resources/com/lowagie/examples/fonts/images/mushroom.png");
+            Image image = Image.getInstance("pdf-toolbox/src/test/resources/org/openpdf/examples/fonts/images/mushroom.png");
             image.scaleToFit(80f, 50f);
             document.add(new Chunk(image, 0.0f, 0.0f));
             document.add(new Chunk("A̋", font));

@@ -15,7 +15,7 @@ of the contributors will also identify and prevent conflict of interests.
 ### Building the project
 
 1. Clone the repository (or your fork)
-2. Run `mvn clean install` in the root directory
+2. Run `mvnw clean install` in the root directory
 
 ### Compatibility matrix
 
@@ -23,7 +23,8 @@ of the contributors will also identify and prevent conflict of interests.
 |-----------------|--------------|
 | 1.3             | 8            |
 | 1.4             | 11           |
-| 2.0 (master)    | 17           |
+| 2.0             | 17           |
+| 2.1+ (master)   | 21          |
 
 ### Please note
 
@@ -33,14 +34,14 @@ of the contributors will also identify and prevent conflict of interests.
   - Continuation indent: 8 spaces
   - Line length: 120 characters
 - Make sure to add tests for your changes
-- Fix any checkstyle issues before submitting your pull request (`mvn checkstyle:check`)
+- Fix any checkstyle issues before submitting your pull request (`mvnw checkstyle:check`)
 - Fix any issues found by the CI build after submitting your pull request
 
 ### Configuring your IDE
 
 1. Configure the formatter (configuration files are in the `config` directory) or
 2. Use the editorconfig plugin for your IDE
-3. Use checkstyle plugin for your IDE (configuration is `checkstyle.xml`), or run `mvn checkstyle:check`
+3. Use checkstyle plugin for your IDE (configuration is `checkstyle.xml`), or run `mvnw checkstyle:check`
 4. Use sonarlint plugin for your IDE
 
 ### Other code quality tools we use

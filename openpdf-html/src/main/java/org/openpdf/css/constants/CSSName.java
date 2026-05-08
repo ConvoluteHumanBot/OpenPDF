@@ -10,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
@@ -781,14 +781,14 @@ public final class CSSName implements Comparable<CSSName> {
             );
     
     public final static CSSName OPACITY =
-    		addProperty(
-    				"opacity",
-    				PRIMITIVE,
-    				"1",
+            addProperty(
+                    "opacity",
+                    PRIMITIVE,
+                    "1",
                     NOT_INHERITED, // PR22 - INHERITS
-    				true,
-    				new PrimitivePropertyBuilders.Opacity()
-    		);
+                    true,
+                    new PrimitivePropertyBuilders.Opacity()
+            );
 
     /**
      * Unique CSSName instance for CSS2 property.
@@ -1845,15 +1845,21 @@ public final class CSSName implements Comparable<CSSName> {
     //Assumed to be consistent with equals because CSSName is in essence an enum
     @Override
     public int compareTo(CSSName object) {
-        if (object == null) throw new NullPointerException("Cannot compare " + this + " to null");
-        return FS_ID - object.FS_ID;//will throw ClassCastException according to Comparable if not a CSSName
+        if (object == null) {
+            throw new NullPointerException("Cannot compare " + this + " to null");
+        }
+        return FS_ID - object.FS_ID; //will throw ClassCastException according to Comparable if not a CSSName
     }
 
     // FIXME equals, hashcode
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CSSName cssName)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof CSSName cssName)) {
+            return false;
+        }
 
         return FS_ID == cssName.FS_ID;
     }

@@ -14,7 +14,10 @@ import org.openpdf.text.pdf.LayoutProcessor.Version;
 
 /**
  * Calls glyph layout examples with current and deprecated version
+ *
+ * @deprecated use GlyphLayountManager
  */
+@Deprecated
 public class RunGlyphLayoutExamples {
 
     /**

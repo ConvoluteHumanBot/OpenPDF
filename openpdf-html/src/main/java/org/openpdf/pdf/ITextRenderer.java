@@ -9,7 +9,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
@@ -497,7 +497,7 @@ public class ITextRenderer {
         Rectangle content = page.getPrintClippingBounds(c);
         if (isScaleToFit()) {
             int pageWidth = calculateWidth(c, page);
-            content.setSize(pageWidth, (int) content.getSize().getHeight());//RTD - to change
+            content.setSize(pageWidth, (int) content.getSize().getHeight()); //RTD - to change
         }
         _outputDevice.clip(content);
 
@@ -617,7 +617,7 @@ public class ITextRenderer {
         if (isScaleToFit()) {
             int pageWidth = firstPage.getWidth(c);
             Rectangle pageRec = firstPage.getPrintClippingBounds(c);
-            if(_dim.getWidth() > pageRec.getWidth()) {
+            if (_dim.getWidth() > pageRec.getWidth()) {
                 RectPropertySet margin = firstPage.getMargin(c);
                 pageWidth = (int) (_dim.getWidth() + margin.left() + margin.right());
             }
