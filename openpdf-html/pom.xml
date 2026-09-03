@@ -7,11 +7,13 @@
   <parent>
     <groupId>com.github.librepdf</groupId>
     <artifactId>openpdf-parent</artifactId>
-    <version>3.0.5-SNAPSHOT</version>
+    <version>3.0.6-SNAPSHOT</version>
   </parent>
 
   <artifactId>openpdf-html</artifactId>
-  <description>openpdf-html is a CSS 2.1 renderer written in Java.  This artifact contains the core rendering and layout code as well as Java2D output.</description>
+  <description>openpdf-html is a CSS 2.1 renderer written in Java. This artifact contains the core rendering and layout
+    code as well as Java2D output.
+  </description>
 
   <licenses>
     <license>
@@ -28,7 +30,7 @@
     <dependency>
       <groupId>org.htmlunit</groupId>
       <artifactId>neko-htmlunit</artifactId>
-      <version>4.21.0</version>
+      <version>5.1.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.librepdf</groupId>

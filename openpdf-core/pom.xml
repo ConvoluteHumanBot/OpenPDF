@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.github.librepdf</groupId>
     <artifactId>openpdf-parent</artifactId>
-    <version>3.0.5-SNAPSHOT</version>
+    <version>3.0.6-SNAPSHOT</version>
   </parent>
 
   <artifactId>openpdf</artifactId>
@@ -38,6 +38,11 @@
       <groupId>org.apache.xmlgraphics</groupId>
       <artifactId>fop</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.aayushatharva.brotli4j</groupId>
+      <artifactId>brotli4j</artifactId>
+      <version>${brotli4j.version}</version>
     </dependency>
 
     <!-- Test Deps -->
