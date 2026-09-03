@@ -89,11 +89,12 @@ public class MatchedPattern {
         return text;
     }
 
+    /**
+     * @return the matched substring of the line, or an empty string if the match indexes do not describe a range
+     * within it
+     */
     public String getMatchedText() {
-        if (this.startIndex < 0 || this.startIndex > this.text.length()) {
-            return "";
-        }
-        if (this.endIndex < 0 || this.endIndex > this.text.length()) {
+        if (this.startIndex < 0 || this.endIndex > this.text.length() || this.startIndex > this.endIndex) {
             return "";
         }
         return text.substring(this.startIndex, this.endIndex);
