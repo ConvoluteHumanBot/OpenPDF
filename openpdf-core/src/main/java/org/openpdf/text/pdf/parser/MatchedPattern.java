@@ -62,16 +62,13 @@ public class MatchedPattern {
      *
      * @param text       original line containing the match
      * @param page       page the match was found on, one based
-     * @param llx        float lower left x coordinate of the line
-     * @param lly        float lower left y coordinate of the line
-     * @param urx        float upper right x coordinate of the line
-     * @param ury        float upper right y coordinate of the line
+     * @param lineBox    bounding box of the whole line, as {llx, lly, urx, ury}
      * @param startIndex index of the first character of the match inside the text, inclusive
      * @param endIndex   index one past the last character of the match inside the text, exclusive
      * @param leftX      float x coordinate at which the match starts
      * @param rightX     float x coordinate at which the match ends
      */
-    MatchedPattern(String text, int page, float llx, float lly, float urx, float ury, int startIndex, int endIndex,
+    MatchedPattern(String text, int page, float[] lineBox, int startIndex, int endIndex,
             float leftX, float rightX) {
         this.text = text;
         this.startIndex = startIndex;
@@ -79,10 +76,7 @@ public class MatchedPattern {
         this.leftX = leftX;
         this.rightX = rightX;
         this.page = page;
-        coordinates[0] = llx;
-        coordinates[1] = lly;
-        coordinates[2] = urx;
-        coordinates[3] = ury;
+        System.arraycopy(lineBox, 0, coordinates, 0, coordinates.length);
     }
 
     public String getText() {

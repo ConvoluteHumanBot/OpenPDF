@@ -49,6 +49,7 @@ package org.openpdf.text.pdf;
 import org.openpdf.text.DocumentException;
 import org.openpdf.text.ExceptionConverter;
 import java.util.HashMap;
+import java.util.Objects;
 
 
 /**
@@ -120,6 +121,7 @@ public class DocumentFont extends BaseFont {
         this.refFont = refFont;
         fontType = FONT_TYPE_DOCUMENT;
         font = (PdfDictionary) PdfReader.getPdfObject(refFont);
+        Objects.requireNonNull(font, "The font reference does not resolve to a font dictionary");
         PdfName asName = font.getAsName(PdfName.BASEFONT);
         if (asName != null) {
             fontName = PdfName.decodeName(asName.toString());
@@ -170,7 +172,15 @@ public class DocumentFont extends BaseFont {
         try {
             PdfObject toUniObject = PdfReader.getPdfObjectRelease(font.get(PdfName.TOUNICODE));
             PdfArray df = (PdfArray) PdfReader.getPdfObjectRelease(font.get(PdfName.DESCENDANTFONTS));
+            if (df == null || df.isEmpty()) {
+                // A Type0 font is required to have a descendant font. Leave the metrics empty for a malformed one
+                // rather than failing the whole document.
+                return;
+            }
             PdfDictionary cidft = (PdfDictionary) PdfReader.getPdfObjectRelease(df.getPdfObject(0));
+            if (cidft == null) {
+                return;
+            }
             PdfNumber dwo = (PdfNumber) PdfReader.getPdfObjectRelease(cidft.get(PdfName.DW));
             if (dwo != null) {
                 defaultCidWidth = dwo.intValue();
