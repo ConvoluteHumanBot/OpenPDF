@@ -61,14 +61,15 @@ public class MatchedPattern {
      * the origin (0, 0) in the lower left point of the page and uses PDF points as unit measure.
      *
      * @param text       original line containing the match
-     * @param startIndex first index of the match inside the text
-     * @param endIndex   last index of the match inside the text
-     * @param llx        float lower left x coordinate
-     * @param page       int
-     * @param llx        float lower left x coordinate
-     * @param lly        float lower left y coordinate
-     * @param urx        float upper right x coordinate
-     * @param ury        float upper right y coordinate
+     * @param page       page the match was found on, one based
+     * @param llx        float lower left x coordinate of the line
+     * @param lly        float lower left y coordinate of the line
+     * @param urx        float upper right x coordinate of the line
+     * @param ury        float upper right y coordinate of the line
+     * @param startIndex index of the first character of the match inside the text, inclusive
+     * @param endIndex   index one past the last character of the match inside the text, exclusive
+     * @param leftX      float x coordinate at which the match starts
+     * @param rightX     float x coordinate at which the match ends
      */
     MatchedPattern(String text, int page, float llx, float lly, float urx, float ury, int startIndex, int endIndex,
             float leftX, float rightX) {
@@ -120,11 +121,11 @@ public class MatchedPattern {
         StringBuilder sb = new StringBuilder();
         sb.append("Text: [")
                 .append(this.text)
-                .append("} - {")
+                .append("] - match: [")
                 .append(this.startIndex)
                 .append("::")
                 .append(this.endIndex)
-                .append("}] - boundingBox: ")
+                .append("] - boundingBox: ")
                 .append(this.printCoordinates())
                 .append(" - page: [")
                 .append(this.page)
