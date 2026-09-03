@@ -44,8 +44,6 @@ package org.openpdf.text.pdf.parser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Stack;
-import org.openpdf.text.pdf.PdfString;
 
 /**
  * @author dgd

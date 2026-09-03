@@ -41,17 +41,11 @@
  */
 package org.openpdf.text.pdf.parser;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Stack;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.openpdf.text.pdf.BaseFont;
-import org.openpdf.text.pdf.PdfString;
 
 /**
  * @author dgd
@@ -166,10 +160,8 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
             int end = m.end();
             float x1 = widths.get(beginning);
             float x2 = widths.get(end);
-            MatchedPattern mp = new MatchedPattern(decoded, this.page, widths.getFirst(), fontFloor, widths.getLast(),
-                    fontCeiling,
-                    beginning, end
-                    , x1, x2);
+            MatchedPattern mp = new MatchedPattern(decoded, this.page, widths.getFirst(), fontFloor,
+                    widths.getLast(), fontCeiling, beginning, end, x1, x2);
             accumulator.add(mp);
         }
     }
@@ -252,7 +244,6 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
                 //assemble current text
                 String inspected = builder.toString();
                 if (widths.size() > 1) {
-                    final float endWidth = widths.getLast();
                     switch (this.mode) {
                         case MatchingStrategy.PATTERN: {
                             matchPdfString(inspected, widths, fontFloor, fontCeiling);
@@ -296,20 +287,26 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
 
             GraphicsState currentGraphicState = pText.getGraphicState();
 
-            String decoded = pText.getText();
-
-            builder.append(decoded);
-            char[] chars = decoded.toCharArray();
-
-            for (char c : chars) {
-                float w = currentGraphicState.getFont().getWidth(c) / 1000.0f;
-                float wordSpacing = Character.isSpaceChar(c) ? currentGraphicState.getWordSpacing() : 0f;
-                float blockWidth =
-                        (w * currentGraphicState.getFontSize() + currentGraphicState.getCharacterSpacing()
-                                + wordSpacing)
-                                * currentGraphicState.getHorizontalScaling();
-                totalWidth += blockWidth;
-                widths.add(totalWidth);
+            // Walk the character codes rather than the decoded text: a PDF stores glyph widths against codes, and
+            // measuring a decoded character instead would have to guess which code produced it. The decoded text and
+            // the offsets are built together so that offsets.get(i) stays the x position at which decoded character i
+            // starts, which is the invariant the matching below relies on.
+            for (char code : pText.getCodePoints()) {
+                String decodedCode = currentGraphicState.getFont().decode(code);
+                float advance = ParsedText.advanceForCode(code, currentGraphicState);
+                if (decodedCode == null || decodedCode.isEmpty()) {
+                    // The code carries no text, but the pen still moves past its glyph.
+                    totalWidth += advance;
+                    continue;
+                }
+                // One code can decode to several characters, as a ligature does. There is no position to be had
+                // inside a single glyph, so spread its advance evenly over the characters it produced.
+                float advancePerChar = advance / decodedCode.length();
+                for (int k = 0; k < decodedCode.length(); k++) {
+                    builder.append(decodedCode.charAt(k));
+                    totalWidth += advancePerChar;
+                    widths.add(totalWidth);
+                }
             }
 
             float currentFontFloor = pY + currentGraphicState.getFontDescentDescriptor();
@@ -329,7 +326,6 @@ public class PdfContentTextLocator extends PdfContentStreamHandler {
             //assemble current text
 
             String inspected = builder.toString();
-            final float endWidth = widths.getLast();
             switch (this.mode) {
                 case MatchingStrategy.PATTERN: {
                     matchPdfString(inspected, widths, fontFloor, fontCeiling);

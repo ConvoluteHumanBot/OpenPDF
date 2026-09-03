@@ -51,8 +51,6 @@ import org.openpdf.text.pdf.fonts.cmaps.CMap;
 import org.openpdf.text.pdf.fonts.cmaps.CMapParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Implementation of DocumentFont used while parsing PDF streams.
@@ -79,8 +77,6 @@ public class CMapAwareDocumentFont extends DocumentFont {
      * Only needed if the ToUnicode CMap is not provided.
      */
     private char[] cidbyte2uni;
-
-    private HashMap<Integer, Integer> unicodeToCid = new HashMap<>();
 
     /**
      * Creates an instance of a CMapAwareFont based on an indirect reference to a font.
@@ -120,19 +116,6 @@ public class CMapAwareDocumentFont extends DocumentFont {
                 CMapParser cmapParser = new CMapParser();
                 toUnicodeCmap = cmapParser
                         .parse(new ByteArrayInputStream(touni));
-
-                // --- NEW REVERSE MAPPING LOGIC ---
-                // CMap stores mappings in different ways (char, strings, ranges).
-                // We need to extract them to build our reverse lookup.
-                Map<Integer, String> cidToUni = toUnicodeCmap.getLookup();
-                for (Map.Entry<Integer, String> entry : cidToUni.entrySet()) {
-                    String uniStr = entry.getValue();
-                    if (uniStr.length() == 1) { // We only care about single characters for getWidth
-                        int unicode = (int) uniStr.charAt(0);
-                        int cid = entry.getKey();
-                        unicodeToCid.put(unicode, cid);
-                    }
-                }
             } catch (IOException e) {
                 throw new Error("Unable to process ToUnicode map - "
                         + e.getMessage(), e);
@@ -193,17 +176,40 @@ public class CMapAwareDocumentFont extends DocumentFont {
      */
     @Override
     public int getWidth(int char1) {
-//        if (char1 == ' ') {
-//            return spaceWidth;
-//        }
-
-        Integer cid = unicodeToCid.get(char1);
-
-        if (cid != null && cid >= 0 && cid < 256) {
-            // widths is the int[256] array populated from /FirstChar
-            return widths[cid];
+        if (char1 == ' ') {
+            return spaceWidth;
         }
         return super.getWidth(char1);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Overridden so that a font which does not declare a width for its space glyph still measures spaces as
+     * {@link #spaceWidth} rather than as zero, matching what {@link #getWidth(int)} does for the Unicode space.
+     */
+    @Override
+    public int getWidthOfCode(int code) {
+        int width = super.getWidthOfCode(code);
+        if (width == 0 && isSpaceCode(code)) {
+            return spaceWidth;
+        }
+        return width;
+    }
+
+    /**
+     * @param code a character code in this font's encoding
+     * @return true if the code decodes to a single space character
+     */
+    private boolean isSpaceCode(int code) {
+        if (code < 0 || code > Character.MAX_VALUE) {
+            return false;
+        }
+        if (!hasUnicodeCMAP() && code > 0xff) {
+            // decode(char) cannot resolve a multi byte code without a ToUnicode map.
+            return false;
+        }
+        return " ".equals(decode((char) code));
     }
 
     /**

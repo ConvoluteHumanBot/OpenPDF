@@ -61,7 +61,6 @@ import org.openpdf.text.pdf.PRTokeniser;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -279,7 +278,7 @@ public abstract class PdfContentStreamHandler {
         if (contextNames.peek() != null) {
             textFragments.add(renderInfo);
         }
-        textMatrix = new Matrix(renderInfo.getWidth(), 0)
+        textMatrix = new Matrix(renderInfo.getUnscaledTextWidth(graphicsState()), 0)
                 .multiply(textMatrix);
     }
 
